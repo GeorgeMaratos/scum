@@ -107,7 +107,7 @@ naive wait_for_ack2
   if(retval == -1) printf("select error\n");
   if(retval){  
     recv_count = recvfrom(socket, packet, MAX_PACKET, 0, (struct sockaddr*)&fromaddr, &addrlen);
-    printf("%d\n",ntohl(hdr->ack_number));
+//    printf("%d\n",ntohl(hdr->ack_number));
     if(seq_num == ntohl(hdr->ack_number))  //need to convert to host order byte
       return ACK_RCV;
     else return NOTHING; //RECURSIVE CALL: RESETS THE TIMEOUT
@@ -153,7 +153,7 @@ naive sender (socket)
 	while(1) {
 	  if(wait_for_ack(sequence_number,sock) == NOTHING) {
 	    diff = clock() - start;
-	    printf("time%d\n",diff / 100000);
+//	    printf("time%d\n",diff / 100000);
 	    if((int)(diff / 100000) >= 3)
 	      send(sock, packet, sizeof(struct hw6_hdr)+len, 0);
 	  }
