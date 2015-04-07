@@ -218,13 +218,12 @@ naive receiver (socket)
 	  seq_expected++;
 	  memcpy(buffer, packet+sizeof(struct hw6_hdr), recv_count-sizeof(struct hw6_hdr));
 	  return recv_count - sizeof(struct hw6_hdr);
-	  
 	}
 	else{
 	  hdr->ack_number = htonl(seq_expected - 1);
 	  printf("sending ack:%d\n",ntohl(hdr->ack_number));
 	  send(sock, packet, sizeof(struct hw6_hdr)+length, 0);   //not sure if length is supposed to be here
-	  recv_count += recvfrom(sock, packet, MAX_PACKET, 0, (struct sockaddr*)&fromaddr, &addrlen);		//1
+	  recv_count = recvfrom(sock, packet, MAX_PACKET, 0, (struct sockaddr*)&fromaddr, &addrlen);		//1
 	}
      }
 //	fprintf(stderr, "Got packet %d\n", ntohl(hdr->sequence_number));
