@@ -102,7 +102,7 @@ naive wait_for_ack2
 
   int retval;
 
-  retval = select(1,&fd,NULL,NULL,&tv);
+  retval = select(socket+1,&fd,NULL,NULL,&tv);
   if(retval == -1) printf("select error\n");
   if(retval){  
     recv_count = recvfrom(socket, packet, MAX_PACKET, 0, (struct sockaddr*)&fromaddr, &addrlen);
