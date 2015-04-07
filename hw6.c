@@ -172,6 +172,7 @@ int rel_socket(int domain, int type, int protocol) {
 
 
 
+int seq_expected = 0;
 
 int rel_recv(int sock, void * buffer, size_t length) {
 
@@ -193,7 +194,7 @@ naive receiver (socket)
 	unsigned int addrlen=sizeof(fromaddr);	
 	int recv_count = recvfrom(sock, packet, MAX_PACKET, 0, (struct sockaddr*)&fromaddr, &addrlen);		//1
 
-
+	int seq;
 
 	// this is a shortcut to 'connect' a listening server socket to the incoming client.
 	// after this, we can use send() instead of sendto(), which makes for easier bookkeeping
@@ -202,15 +203,32 @@ naive receiver (socket)
 	}
 
 //2
-	hdr->ack_number = hdr->sequence_number;
-	send(sock, packet, sizeof(struct hw6_hdr)+length, 0);   //not sure if length is supposed to be here
 
+	//receiver must send an ack of the segment
+	//if expected is received then send the ack and return
+	//if sequence is lower than expected, then send last ack and wait for response
+	//if sequence is higher than expected, then do the same
 
-
+     while(1) {
+	seq = ntohl(hdr->sequence_number);
+	if(seq == seq_expected) {
+	  hdr->ack_number = htonl(seq);
+	  printf("sending ack:%d\n",ntohl(hdr->ack_number));
+	  send(sock, packet, sizeof(struct hw6_hdr)+length, 0);   //not sure if length is supposed to be here
+	  seq_expected++;
+	  memcpy(buffer, packet+sizeof(struct hw6_hdr), recv_count-sizeof(struct hw6_hdr));
+	  return recv_count - sizeof(struct hw6_hdr);
+	  
+	}
+	else{
+	  hdr->ack_number = htonl(seq_expected - 1);
+	  printf("sending ack:%d\n",ntohl(hdr->ack_number));
+	  send(sock, packet, sizeof(struct hw6_hdr)+length, 0);   //not sure if length is supposed to be here
+	  recv_count += recvfrom(sock, packet, MAX_PACKET, 0, (struct sockaddr*)&fromaddr, &addrlen);		//1
+	}
+     }
 //	fprintf(stderr, "Got packet %d\n", ntohl(hdr->sequence_number));
 
-	memcpy(buffer, packet+sizeof(struct hw6_hdr), recv_count-sizeof(struct hw6_hdr));
-	return recv_count - sizeof(struct hw6_hdr);
 }
 
 int rel_close(int sock) {
