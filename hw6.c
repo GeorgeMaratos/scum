@@ -154,7 +154,7 @@ naive sender (socket)
 	  if(wait_for_ack(sequence_number,sock) == NOTHING) {
 	    diff = clock() - start;
 	    printf("time%d\n",diff / 100000);
-	    if((int)(diff / 100000) >= 5)
+	    if((int)(diff / 100000) >= 3)
 	      send(sock, packet, sizeof(struct hw6_hdr)+len, 0);
 	  }
 	  if(wait_for_ack(sequence_number,sock) == ACK_RCV) {
@@ -213,7 +213,7 @@ naive receiver (socket)
 	seq = ntohl(hdr->sequence_number);
 	if(seq == seq_expected) {
 	  hdr->ack_number = htonl(seq);
-	  printf("sending ack:%d\n",ntohl(hdr->ack_number));
+//	  printf("sending ack:%d\n",ntohl(hdr->ack_number));
 	  send(sock, packet, sizeof(struct hw6_hdr)+length, 0);   //not sure if length is supposed to be here
 	  seq_expected++;
 	  memcpy(buffer, packet+sizeof(struct hw6_hdr), recv_count-sizeof(struct hw6_hdr));
@@ -221,7 +221,7 @@ naive receiver (socket)
 	}
 	else{
 	  hdr->ack_number = htonl(seq_expected - 1);
-	  printf("sending ack:%d\n",ntohl(hdr->ack_number));
+//	  printf("sending ack:%d\n",ntohl(hdr->ack_number));
 	  send(sock, packet, sizeof(struct hw6_hdr)+length, 0);   //not sure if length is supposed to be here
 	  recv_count = recvfrom(sock, packet, MAX_PACKET, 0, (struct sockaddr*)&fromaddr, &addrlen);		//1
 	}
