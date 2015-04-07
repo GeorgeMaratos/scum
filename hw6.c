@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include <unistd.h>
 #include <string.h>
 #include <sys/types.h>
@@ -10,10 +11,11 @@
 #include <netinet/in.h>
 #include "hw6.h"
 
-#define TIMEOUT 0
+#define NOTHING 0
 #define ACK_RCV 1
 
 int sequence_number;
+int TIME = 5;
 
 int timeval_to_msec(struct timeval *t) { 
 	return t->tv_sec*1000+t->tv_usec/1000;
@@ -93,7 +95,7 @@ naive wait_for_ack2
 
 //variables for timeout
   struct timeval tv;
-  tv.tv_sec = 5;
+  tv.tv_sec = 0;
   tv.tv_usec = 0;
 
   fd_set fd;
@@ -109,9 +111,14 @@ naive wait_for_ack2
     printf("%d\n",ntohl(hdr->ack_number));
     if(seq_num == ntohl(hdr->ack_number))  //need to convert to host order byte
       return ACK_RCV;
-    else return TIMEOUT; //RECURSIVE CALL: RESETS THE TIMEOUT
+    else return NOTHING; //RECURSIVE CALL: RESETS THE TIMEOUT
   }
-  else return TIMEOUT;		
+  else return NOTHING;		
+}
+
+int time_now(clock_t diff) {
+  int half = diff * 1000 / CLOCKS_PER_SEC;
+  return half / 1000;
 }
 
 void rel_send(int sock, void *buf, int len)  //conversion problem in the sender
@@ -121,8 +128,9 @@ naive sender (socket)
 1  packet = make_packet(buffer);
 2  send(packet)
 3  while (1)
-4    if wait_for_ack() == timeout
-5      send(packet)
+4    if wait_for_ack() == nothing  
+5      if_time_not_reached() 
+         send(packet)
 6    if wait_for_ack() == received_ack
 7	if check_ack == true
 8	  sequence_number++
@@ -136,14 +144,22 @@ naive sender (socket)
 	struct hw6_hdr *hdr = (struct hw6_hdr*)packet;
 	hdr->sequence_number = htonl(sequence_number);
 	memcpy(hdr+1,buf,len); //hdr+1 is where the payload starts
+
+	//used for timer
+	int sec;
+	clock_t start, diff;
 //2	
 	send(sock, packet, sizeof(struct hw6_hdr)+len, 0);
-
+	start = clock();
+	
 //3
 	while(1) {
-	  if(wait_for_ack(sequence_number,sock) == TIMEOUT)
-	    send(sock, packet, sizeof(struct hw6_hdr)+len, 0);
-	  if(wait_for_ack(sequence_number,sock) == ACK_RCV) {
+	  if(wait_for_ack(sequence_number,sock) == NOTHING) {
+	    diff = clock() - start;
+	    if(time_now(diff) >= TIME)
+	      send(sock, packet, sizeof(struct hw6_hdr)+len, 0);
+	  }
+	  else if(wait_for_ack(sequence_number,sock) == ACK_RCV) {
 	    sequence_number++;
   	    return;
 	  }
