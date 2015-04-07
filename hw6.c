@@ -10,7 +10,7 @@
 #include <netinet/in.h>
 #include "hw6.h"
 
-#define TIMEOUT 0
+#define NOTHING 0
 #define ACK_RCV 1
 
 int sequence_number;
@@ -93,7 +93,7 @@ naive wait_for_ack2
 
 //variables for timeout
   struct timeval tv;
-  tv.tv_sec = 5;
+  tv.tv_sec = 0;
   tv.tv_usec = 0;
 
   fd_set fd;
@@ -109,9 +109,9 @@ naive wait_for_ack2
     printf("%d\n",ntohl(hdr->ack_number));
     if(seq_num == ntohl(hdr->ack_number))  //need to convert to host order byte
       return ACK_RCV;
-    else return TIMEOUT; //RECURSIVE CALL: RESETS THE TIMEOUT
+    else return NOTHING; //RECURSIVE CALL: RESETS THE TIMEOUT
   }
-  else return TIMEOUT;		
+  else return NOTHING;		
 }
 
 void rel_send(int sock, void *buf, int len)  //conversion problem in the sender
@@ -141,7 +141,7 @@ naive sender (socket)
 
 //3
 	while(1) {
-	  if(wait_for_ack(sequence_number,sock) == TIMEOUT)
+	  if(wait_for_ack(sequence_number,sock) == NOTHING)
 	    send(sock, packet, sizeof(struct hw6_hdr)+len, 0);
 	  if(wait_for_ack(sequence_number,sock) == ACK_RCV) {
 	    sequence_number++;
