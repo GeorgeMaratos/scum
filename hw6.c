@@ -117,8 +117,7 @@ naive wait_for_ack2
 }
 
 int time_now(clock_t diff) {
-  int half = diff * 1000 / CLOCKS_PER_SEC;
-  return half / 1000;
+  return diff / 10000;
 }
 
 void rel_send(int sock, void *buf, int len)  //conversion problem in the sender
