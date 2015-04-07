@@ -15,6 +15,7 @@
 #define ACK_RCV 1
 
 int sequence_number;
+int RTT = 0;
 
 int timeval_to_msec(struct timeval *t) { 
 	return t->tv_sec*1000+t->tv_usec/1000;
@@ -38,7 +39,7 @@ int rel_connect(int socket,struct sockaddr_in *toaddr,int addrsize) {
 }
 
 int rel_rtt(int socket) {
-		 return 1000;
+		 return RTT;
 }
 
 
@@ -92,11 +93,10 @@ naive wait_for_ack2
   }
   else return NOTHING;		
 }
-int RTT = 0;
 
 void cal_rtt(clock_t a, clock_t b) {
   RTT = (int)((0.875)*(RTT) + (0.275)*(int)(b - a));
-  printf("RTT:%d\n");
+//  printf("RTT:%d\n");
 }
 void rel_send(int sock, void *buf, int len)  //conversion problem in the sender
 {
