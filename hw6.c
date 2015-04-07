@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <time.h>
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/uio.h>
@@ -136,13 +137,26 @@ naive sender (socket)
 	struct hw6_hdr *hdr = (struct hw6_hdr*)packet;
 	hdr->sequence_number = htonl(sequence_number);
 	memcpy(hdr+1,buf,len); //hdr+1 is where the payload starts
+
+	//for timer
+	clock_t start, diff;
+
+
+
+
+
 //2	
+	start = clock();
 	send(sock, packet, sizeof(struct hw6_hdr)+len, 0);
 
 //3
 	while(1) {
-	  if(wait_for_ack(sequence_number,sock) == NOTHING)
-	    send(sock, packet, sizeof(struct hw6_hdr)+len, 0);
+	  if(wait_for_ack(sequence_number,sock) == NOTHING) {
+	    diff = clock() - start;
+	    printf("time%d\n",diff / 100000);
+	    if((int)(diff / 100000) >= 5)
+	      send(sock, packet, sizeof(struct hw6_hdr)+len, 0);
+	  }
 	  if(wait_for_ack(sequence_number,sock) == ACK_RCV) {
 	    sequence_number++;
   	    return;
