@@ -41,12 +41,24 @@ int rel_rtt(int socket) {
 
 int timeout_value = 0;
 
+
 int check_timeout() {
 /*
 naive check_timeout
   return false
+
+naive check_timeout2
+ if check_value() == done
+   return true
+ else return false
+
 */
+  if(timeout_value++ < 10000)
     return 0;
+  else {
+    printf("timeout occured\n");
+    return 1;
+  }
 }
 
 
