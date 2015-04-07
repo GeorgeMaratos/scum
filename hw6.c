@@ -41,28 +41,6 @@ int rel_rtt(int socket) {
 		 return 1000;
 }
 
-int timeout_value = 0;
-
-
-int check_timeout() {
-/*
-naive check_timeout
-  return false
-
-naive check_timeout2
- if check_value() == done
-   return true
- else return false
-
-*/
-  if(timeout_value++ < 1)
-    return 0;
-  else {
-    printf("timeout occured\n");
-    return 1;
-  }
-}
-
 
 int wait_for_ack(int seq_num, int socket) { //wait for ack is done it just needs the right timeout
 /*
@@ -110,11 +88,16 @@ naive wait_for_ack2
 //    printf("%d\n",ntohl(hdr->ack_number));
     if(seq_num == ntohl(hdr->ack_number))  //need to convert to host order byte
       return ACK_RCV;
-    else return NOTHING; //RECURSIVE CALL: RESETS THE TIMEOUT
+    else return NOTHING; 
   }
   else return NOTHING;		
 }
+int RTT = 0;
 
+void cal_rtt(clock_t a, clock_t b) {
+  RTT = (int)((0.875)*(RTT) + (0.275)*(int)(b - a));
+  printf("RTT:%d\n");
+}
 void rel_send(int sock, void *buf, int len)  //conversion problem in the sender
 {
 /*  
@@ -148,17 +131,17 @@ naive sender (socket)
 //2	
 	start = clock();
 	send(sock, packet, sizeof(struct hw6_hdr)+len, 0);
-
 //3
 	while(1) {
 	  if(wait_for_ack(sequence_number,sock) == NOTHING) {
 	    diff = clock() - start;
 //	    printf("time%d\n",diff / 100000);
-	    if((int)(diff / 100000) >= 3)
+	    if((int)(diff) >= RTT)
 	      send(sock, packet, sizeof(struct hw6_hdr)+len, 0);
 	  }
 	  if(wait_for_ack(sequence_number,sock) == ACK_RCV) {
 	    sequence_number++;
+	    cal_rtt(start,clock());
   	    return;
 	  }
 	}
