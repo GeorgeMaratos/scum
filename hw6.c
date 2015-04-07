@@ -53,7 +53,7 @@ naive check_timeout2
  else return false
 
 */
-  if(timeout_value++ < 10000)
+  if(timeout_value++ < 1)
     return 0;
   else {
     printf("timeout occured\n");
