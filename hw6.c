@@ -63,7 +63,7 @@ naive check_timeout2
 }
 
 
-int wait_for_ack(int seq_num, int socket) {
+int wait_for_ack(int seq_num, int socket) { //wait for ack is done it just needs the right timeout
 /*
 naive wait_for_ack (sq_num, socket)
   while !timeout
@@ -106,14 +106,14 @@ naive wait_for_ack2
   if(retval == -1) printf("select error\n");
   if(retval){  
     recv_count = recvfrom(socket, packet, MAX_PACKET, 0, (struct sockaddr*)&fromaddr, &addrlen);
-    if(seq_num == hdr->sequence_number)
+    if(seq_num == ntohl(hdr->sequence_number))  //need to convert to host order byte
       return ACK_RCV;
-    else return wait_for_ack(seq_num,socket); //RECURSIVE CALL: RESETS THE TIMEOUT
+    else return TIMEOUT; //RECURSIVE CALL: RESETS THE TIMEOUT
   }
   else return TIMEOUT;		
 }
 
-void rel_send(int sock, void *buf, int len)
+void rel_send(int sock, void *buf, int len)  //conversion problem in the sender
 {
 /*  
 naive sender (socket)
