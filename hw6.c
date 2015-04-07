@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/time.h>
 #include <sys/uio.h>
 #include <sys/socket.h>
 #include <sys/select.h>
@@ -70,7 +71,18 @@ naive wait_for_ack (sq_num, socket)
     if seq_num == packet.seq)num
       return 1
   return 0
+
+naive wait_for_ack2
+  if(select_for_a_time() == timeout)
+    return TIMEOUT
+  else
+    if seq_num == packet.seq)num
+      return ACK_RCV
+    else return wait_for_ack(seq_num,socket)
+  
 */
+
+//variables to read the packet
   char packet[MAX_PACKET];
   memset(&packet,0,sizeof(packet));
   struct hw6_hdr* hdr=(struct hw6_hdr*)packet;	
@@ -79,14 +91,26 @@ naive wait_for_ack (sq_num, socket)
   unsigned int addrlen=sizeof(fromaddr);	
   int recv_count;
 
-  while(!check_timeout()) {
-    recv_count = recvfrom(socket, packet, MAX_PACKET, 0, (struct sockaddr*)&fromaddr, &addrlen);		
-    if(recv_count > 0) {
-      if(hdr->sequence_number == seq_num)
-	return 1;
-    }
+//variables for timeout
+  struct timeval tv;
+  tv.tv_sec = 5;
+  tv.tv_usec = 0;
+
+  fd_set fd;
+  FD_ZERO(&fd);
+  FD_SET(socket,&fd);
+
+  int retval;
+
+  retval = select(1,&fd,NULL,NULL,&tv);
+  if(retval == -1) printf("select error\n");
+  if(retval){  
+    recv_count = recvfrom(socket, packet, MAX_PACKET, 0, (struct sockaddr*)&fromaddr, &addrlen);
+    if(seq_num == hdr->sequence_number)
+      return ACK_RCV;
+    else return wait_for_ack(seq_num,socket); //RECURSIVE CALL: RESETS THE TIMEOUT
   }
-  return 0;
+  else return TIMEOUT;		
 }
 
 void rel_send(int sock, void *buf, int len)
