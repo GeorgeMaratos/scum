@@ -9,6 +9,9 @@
 #include <netinet/in.h>
 #include "hw6.h"
 
+#define TIMEOUT 0
+#define ACK_RCV 1
+
 int sequence_number;
 
 int timeval_to_msec(struct timeval *t) { 
@@ -36,33 +39,78 @@ int rel_rtt(int socket) {
 		 return 1000;
 }
 
+int timeout_value = 0;
+
+int check_timeout() {
+/*
+naive check_timeout
+  return false
+*/
+    return 0;
+}
+
+
+int wait_for_ack(int seq_num, int socket) {
+/*
+naive wait_for_ack (sq_num, socket)
+  while !timeout
+    packet = receive(packet)
+    if seq_num == packet.seq)num
+      return 1
+  return 0
+*/
+  char packet[MAX_PACKET];
+  memset(&packet,0,sizeof(packet));
+  struct hw6_hdr* hdr=(struct hw6_hdr*)packet;	
+
+  struct sockaddr_in fromaddr;
+  unsigned int addrlen=sizeof(fromaddr);	
+  int recv_count;
+
+  while(!check_timeout()) {
+    recv_count = recvfrom(socket, packet, MAX_PACKET, 0, (struct sockaddr*)&fromaddr, &addrlen);		
+    if(recv_count > 0) {
+      if(hdr->sequence_number == seq_num)
+	return 1;
+    }
+  }
+  return 0;
+}
+
 void rel_send(int sock, void *buf, int len)
 {
 /*  
-sender (socket)
-  packet = make_packet(buffer);
-  send(packet)
-  while (1)
-    if wait_for_ack() == timeout
-      send(packet)
-    if wait_for_ack() == received_ack
-	if check_ack == true
-	  sequence_number++
-	  return
+naive sender (socket)
+1  packet = make_packet(buffer);
+2  send(packet)
+3  while (1)
+4    if wait_for_ack() == timeout
+5      send(packet)
+6    if wait_for_ack() == received_ack
+7	if check_ack == true
+8	  sequence_number++
+9	  return
 */
 
 
+//1
  	// make the packet = header + buf
 	char packet[1400];
 	struct hw6_hdr *hdr = (struct hw6_hdr*)packet;
 	hdr->sequence_number = htonl(sequence_number);
 	memcpy(hdr+1,buf,len); //hdr+1 is where the payload starts
-	
+//2	
 	send(sock, packet, sizeof(struct hw6_hdr)+len, 0);
 
-
-	sequence_number++;
-
+//3
+	while(1) {
+	  if(wait_for_ack(sequence_number,sock) == TIMEOUT)
+	    send(sock, packet, sizeof(struct hw6_hdr)+len, 0);
+	  if(wait_for_ack(sequence_number,sock) == ACK_RCV) {
+	    sequence_number++;
+  	    return;
+	  }
+	}
 
 }
 
@@ -81,8 +129,9 @@ int rel_recv(int sock, void * buffer, size_t length) {
 
 naive receiver (socket)
 1     packet = receive(packet)
-3       send_ack(packet.sequence)
+2       send_ack(packet.sequence)
 */
+
 
 
 	char packet[MAX_PACKET];
@@ -95,7 +144,6 @@ naive receiver (socket)
 
 
 
-
 	// this is a shortcut to 'connect' a listening server socket to the incoming client.
 	// after this, we can use send() instead of sendto(), which makes for easier bookkeeping
 	if(connect(sock, (struct sockaddr*)&fromaddr, addrlen)) {
@@ -104,6 +152,9 @@ naive receiver (socket)
 
 //2
 	hdr->ack_number = hdr->sequence_number;
+	send(sock, packet, sizeof(struct hw6_hdr)+length, 0);   //not sure if length is supposed to be here
+
+
 
 //	fprintf(stderr, "Got packet %d\n", ntohl(hdr->sequence_number));
 
