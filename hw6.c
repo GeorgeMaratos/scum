@@ -36,7 +36,7 @@ int check_sum(char *data,int length) {
   int i,sum = 0;
   for(i=0;i<length;i++)
     sum += data[i];
-//  printf("CheckSum:%d\n",sum);
+  printf("CheckSum:%d\n",sum);
   return sum;
 }
 
@@ -60,7 +60,7 @@ naive wait_for_ack (sq_num, socket)
 
 naive wait_for_ack2
   if(select_for_a_time() == timeout)
-    return TIMEOUT:
+    return TIMEOUT
   else
     if seq_num == packet.seq)num
       return ACK_RCV
@@ -185,7 +185,7 @@ naive receiver (socket)
 	unsigned int addrlen=sizeof(fromaddr);	
 	int recv_count = recvfrom(sock, packet, MAX_PACKET, 0, (struct sockaddr*)&fromaddr, &addrlen);		//1
 
-	int seq,check;
+	int seq, sum;
 
 	// this is a shortcut to 'connect' a listening server socket to the incoming client.
 	// after this, we can use send() instead of sendto(), which makes for easier bookkeeping
@@ -202,13 +202,13 @@ naive receiver (socket)
 
      while(1) {
 	seq = ntohl(hdr->sequence_number);
-	check = ntohl(hdr->checksum);
-	if(seq == seq_expected && check == htonl(check_sum(buffer,length))) {
+	sum = ntohl(hdr->checksum);
+	if(seq == seq_expected && check_sum(buffer,length) == sum) {
 	  hdr->ack_number = htonl(seq);
-//	  printf("sending ack:%d\n",ntohl(hdr->ack_number));
 	  hdr->checksum = htonl(check_sum(buffer,length));
+//	  printf("sending ack:%d\n",ntohl(hdr->ack_number));
 	  send(sock, packet, sizeof(struct hw6_hdr)+length, 0);   //not sure if length is supposed to be here
-	  printf("Packet from receiver:");check_sum(buffer,length);
+	//  printf("Packet from receiver:");check_sum(buffer,length);
 	  seq_expected++;
 	  memcpy(buffer, packet+sizeof(struct hw6_hdr), recv_count-sizeof(struct hw6_hdr));
 	  return recv_count - sizeof(struct hw6_hdr);
