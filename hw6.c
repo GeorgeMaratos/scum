@@ -32,11 +32,11 @@ int current_msec() {
 	return timeval_to_msec(&t);
 }
 
-int check_sum(char *packet) {
+int check_sum(char *data,int length) {
   int i,sum = 0;
-  for(i=0;i<MAX_PACKET;i++)
-    sum += packet[i];
-  printf("CheckSum:%d\n");
+  for(i=0;i<length;i++)
+    sum += data[i];
+  printf("CheckSum:%d\n",sum);
   return sum;
 }
 
@@ -104,7 +104,7 @@ void cal_rtt(clock_t a, clock_t b) {
   RTT = (int)((0.875)*(RTT) + (0.275)*(int)(b - a));
 //  printf("RTT:%d\n");
 }
-void rel_send(int sock, void *buf, int len)  //conversion problem in the sender
+void rel_send(int sock, void *buf, int len)  
 {
 /*  
 naive sender (socket)
@@ -136,7 +136,7 @@ naive sender (socket)
 
 //2	
 	start = clock();
-	printf("Packet from sender:");check_sum(packet);
+	printf("Packet from sender:");check_sum(buf,len);
 	send(sock, packet, sizeof(struct hw6_hdr)+len, 0);
 //3
 	while(1) {
@@ -205,7 +205,7 @@ naive receiver (socket)
 	  hdr->ack_number = htonl(seq);
 //	  printf("sending ack:%d\n",ntohl(hdr->ack_number));
 	  send(sock, packet, sizeof(struct hw6_hdr)+length, 0);   //not sure if length is supposed to be here
-	  printf("Packet from receiver:");check_sum(packet);
+	  printf("Packet from receiver:");check_sum(buffer,length);
 	  seq_expected++;
 	  memcpy(buffer, packet+sizeof(struct hw6_hdr), recv_count-sizeof(struct hw6_hdr));
 	  return recv_count - sizeof(struct hw6_hdr);
