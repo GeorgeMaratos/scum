@@ -3,6 +3,7 @@
 struct hw6_hdr {
 	uint32_t sequence_number;
 	uint32_t ack_number;
+	uint32_t checksum;
 };
 
 #define MAX_PACKET 1400

@@ -33,6 +33,12 @@ int current_msec() {
 }
 
 
+int check_sum(char *data) { 
+  int i, sum = 0;
+  for(i=0;i<MAX_PACKET;i++)
+    sum += data[i];
+  return sum;
+}
 
 int rel_connect(int socket,struct sockaddr_in *toaddr,int addrsize) {
 		 connect(socket,(struct sockaddr*)toaddr,addrsize);
@@ -87,8 +93,11 @@ naive wait_for_ack2
   if(retval){  
     recv_count = recvfrom(socket, packet, MAX_PACKET, 0, (struct sockaddr*)&fromaddr, &addrlen);
 //    printf("%d\n",ntohl(hdr->ack_number));
-    if(seq_num == ntohl(hdr->ack_number))  //need to convert to host order byte
-      return ACK_RCV;
+    if(seq_num == ntohl(hdr->ack_number)) {  //need to convert to host order byte
+      if(ntohl(hdr->checksum) == check_sum(packet))
+        return ACK_RCV;
+      else return NOTHING;
+    }
     else return NOTHING; 
   }
   else return NOTHING;		
@@ -98,7 +107,7 @@ void cal_rtt(clock_t a, clock_t b) {
   RTT = (int)((0.875)*(RTT) + (0.275)*(int)(b - a));
 //  printf("RTT:%d\n");
 }
-void rel_send(int sock, void *buf, int len)  //conversion problem in the sender
+void rel_send(int sock, void *buf, int len)  //checksum checked in wait_for_ack
 {
 /*  
 naive sender (socket)
@@ -123,12 +132,9 @@ naive sender (socket)
 
 	//for timer
 	clock_t start, diff;
-
-
-
-
-
 //2	
+
+	hdr->checksum = htonl(check_sum(packet)); 
 	start = clock();
 	send(sock, packet, sizeof(struct hw6_hdr)+len, 0);
 //3
@@ -145,7 +151,6 @@ naive sender (socket)
   	    return;
 	  }
 	}
-
 }
 
 int rel_socket(int domain, int type, int protocol) {
@@ -177,7 +182,7 @@ naive receiver (socket)
 	unsigned int addrlen=sizeof(fromaddr);	
 	int recv_count = recvfrom(sock, packet, MAX_PACKET, 0, (struct sockaddr*)&fromaddr, &addrlen);		//1
 
-	int seq;
+	int seq,sum;
 
 	// this is a shortcut to 'connect' a listening server socket to the incoming client.
 	// after this, we can use send() instead of sendto(), which makes for easier bookkeeping
@@ -194,7 +199,8 @@ naive receiver (socket)
 
      while(1) {
 	seq = ntohl(hdr->sequence_number);
-	if(seq == seq_expected) {
+	sum = ntohl(hdr->checksum);
+	if(seq == seq_expected && sum == check_sum(packet)) {
 	  hdr->ack_number = htonl(seq);
 //	  printf("sending ack:%d\n",ntohl(hdr->ack_number));
 	  send(sock, packet, sizeof(struct hw6_hdr)+length, 0);   //not sure if length is supposed to be here
