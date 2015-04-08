@@ -36,7 +36,7 @@ int check_sum(char *data,int length) {
   int i,sum = 0;
   for(i=0;i<length;i++)
     sum += data[i];
-//  printf("CheckSum:%d\n",sum);
+  //printf("CheckSum:%d\n",sum);
   return sum;
 }
 
@@ -60,7 +60,7 @@ naive wait_for_ack (sq_num, socket)
 
 naive wait_for_ack2
   if(select_for_a_time() == timeout)
-    return TIMEOUT:
+    return TIMEOUT
   else
     if seq_num == packet.seq)num
       return ACK_RCV
@@ -136,8 +136,7 @@ naive sender (socket)
 
 //2	
 	start = clock();
-//	printf("Packet from sender:");check_sum(buf,len);
-	hdr->checksum = htonl(check_sum(buf,len));
+	//printf("Packet from sender:");check_sum(buf,len);
 	send(sock, packet, sizeof(struct hw6_hdr)+len, 0);
 //3
 	while(1) {
@@ -185,7 +184,7 @@ naive receiver (socket)
 	unsigned int addrlen=sizeof(fromaddr);	
 	int recv_count = recvfrom(sock, packet, MAX_PACKET, 0, (struct sockaddr*)&fromaddr, &addrlen);		//1
 
-	int seq,check;
+	int seq;
 
 	// this is a shortcut to 'connect' a listening server socket to the incoming client.
 	// after this, we can use send() instead of sendto(), which makes for easier bookkeeping
@@ -202,11 +201,9 @@ naive receiver (socket)
 
      while(1) {
 	seq = ntohl(hdr->sequence_number);
-	check = ntohl(hdr->checksum);
-	if(seq == seq_expected && check == htonl(check_sum(buffer,length))) {
+	if(seq == seq_expected) {
 	  hdr->ack_number = htonl(seq);
 //	  printf("sending ack:%d\n",ntohl(hdr->ack_number));
-	  hdr->checksum = htonl(check_sum(buffer,length));
 	  send(sock, packet, sizeof(struct hw6_hdr)+length, 0);   //not sure if length is supposed to be here
 	  //printf("Packet from receiver:");check_sum(buffer,length);
 	  seq_expected++;
@@ -215,7 +212,6 @@ naive receiver (socket)
 	}
 	else{
 	  hdr->ack_number = htonl(seq_expected - 1);
-	  hdr->checksum = htonl(check_sum(buffer,length));
 //	  printf("sending ack:%d\n",ntohl(hdr->ack_number));
 	  send(sock, packet, sizeof(struct hw6_hdr)+length, 0);   //not sure if length is supposed to be here
 	  recv_count = recvfrom(sock, packet, MAX_PACKET, 0, (struct sockaddr*)&fromaddr, &addrlen);		//1
