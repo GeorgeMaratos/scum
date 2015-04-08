@@ -49,7 +49,7 @@ int rel_rtt(int socket) {
 }
 
 
-int wait_for_ack(int seq_num, int socket) { //wait for ack is done it just needs the right timeout
+int wait_for_ack(int seq_num, int socket,void *buf, int len) { //wait for ack is done it just needs the right timeout
 /*
 naive wait_for_ack (sq_num, socket)
   while !timeout
@@ -93,7 +93,7 @@ naive wait_for_ack2
   if(retval){  
     recv_count = recvfrom(socket, packet, MAX_PACKET, 0, (struct sockaddr*)&fromaddr, &addrlen);
 //    printf("%d\n",ntohl(hdr->ack_number));
-    if(seq_num == ntohl(hdr->ack_number))  //need to convert to host order byte
+    if(seq_num == ntohl(hdr->ack_number) && ntohl(hdr->checksum) == check_sum(buf,len))  //need to convert to host order byte
       return ACK_RCV;
     else return NOTHING; 
   }
@@ -141,13 +141,13 @@ naive sender (socket)
 	send(sock, packet, sizeof(struct hw6_hdr)+len, 0);
 //3
 	while(1) {
-	  if(wait_for_ack(sequence_number,sock) == NOTHING) {
+	  if(wait_for_ack(sequence_number,sock,buf,len) == NOTHING) {
 	    diff = clock() - start;
 //	    printf("time%d\n",diff / 100000);
 	    if((int)(diff) >= RTT)
 	      send(sock, packet, sizeof(struct hw6_hdr)+len, 0);
 	  }
-	  if(wait_for_ack(sequence_number,sock) == ACK_RCV) {
+	  if(wait_for_ack(sequence_number,sock,buf,len) == ACK_RCV) {
 	    sequence_number++;
 	    cal_rtt(start,clock());
   	    return;
